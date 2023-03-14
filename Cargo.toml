@@ -1,0 +1,15 @@
+[package]
+name = "logv"
+version = "0.3.0"
+authors = ["Carl Fredrik Samson <cf@samson.no>"]
+description = "A very simple program to view and filter logs easily."
+repository = "https://github.com/cfsamson/rust-logviewer"
+documentation = "https://docs.rs/logv"
+license = "MIT"
+readme = "README.md"
+categories = ["command-line-utilities", "visualization"]
+keywords = ["visualization", "debug-tool", "log", "viewer" ]
+edition = "2018"
+
+[dependencies]
+rocket = { version = "0.5.0-rc.2", features = ["json"]}
