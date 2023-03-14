@@ -98,12 +98,6 @@ impl Resp {
     }
 }
 
-#[get("/")]
-fn index() -> content::RawHtml<&'static str> {
-    let index = include_str!("../web/index.html");
-    content::RawHtml(index)
-}
-
 #[get("/log/<nro>")]
 fn get_log(nro: usize) -> Json<Resp> {
     
@@ -262,13 +256,41 @@ fn launch_browser(url: &str) -> io::Result<()> {
     Ok(())
 }
 
-#[rocket::main]
-async fn main() -> Result<(), rocket::Error> {
-    if let Err(e) = launch_browser("http://127.0.0.1:8000/") {
-        eprintln!("Failed to launch browser: {}", e);
+// #[rocket::main]
+// async fn main() -> Result<(), rocket::Error> {
+//     if let Err(e) = launch_browser("http://127.0.0.1:8000/") {
+//         eprintln!("Failed to launch browser: {}", e);
+//     }
+
+//     let _rocket = rocket::build().mount("/", routes![index, get_log, get_logs]).launch().await?;
+
+//     Ok(())
+// }
+
+
+
+use rocket::fs::{FileServer, relative};
+
+// If we wanted or needed to serve files manually, we'd use `NamedFile`. Always
+// prefer to use `FileServer`!
+mod manual {
+    use std::path::{PathBuf, Path};
+    use rocket::fs::NamedFile;
+
+    #[rocket::get("/second/<path..>")]
+    pub async fn second(path: PathBuf) -> Option<NamedFile> {
+        let mut path = Path::new(super::relative!("static")).join(path);
+        if path.is_dir() {
+            path.push("index.html");
+        }
+
+        NamedFile::open(path).await.ok()
     }
+}
 
-    let _rocket = rocket::build().mount("/", routes![index, get_log, get_logs]).launch().await?;
-
-    Ok(())
+#[rocket::launch]
+fn rocket() -> _ {
+    rocket::build()
+        .mount("/", rocket::routes![manual::second, get_logs, get_log])
+        .mount("/", FileServer::from(relative!("static")))
 }
