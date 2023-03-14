@@ -39,19 +39,19 @@ document.addEventListener('keyup', (e) => {
     }
     
     if (e.code == 'Equal') {
-        gotoNextStart(_nstart + 1)
+        gotoNextStart(1)
     }
 
     if (e.code == 'Minus') {
-        gotoNextStart(_nstart -1)
-    }
-
-    if (e.code == 'BracketRight') {
-        gotoNextStart(-2)
+        gotoNextStart(-1)
     }
 
     if (e.code == 'BracketLeft') {
-        gotoNextStart(0)
+        gotoFirst()
+    }
+
+    if (e.code == 'BracketRight') {
+        gotoLast()
     }
 })
 
@@ -68,25 +68,66 @@ document.getElementById('btn-auto-refresh').addEventListener('click', (e) => {
 })
 
 // functions
+function checkVisible(el) {
+    let rect = el.getBoundingClientRect()
+    let viewH = Math.max(document.documentElement.clientHeight, window.innerHeight)
+    return !(rect.bottom < 0) || rect.top - viewH >= 0
+}
+
+function update_nStartReference() {
+    let els = document.getElementsByClassName('test-starting')
+
+    let n_el = els.length + 1
+
+    for (el of els) {
+        
+        if (!checkVisible(el)) {
+            continue
+        }
+
+        let n_ = el.className.match(/(?<=nstart-)\d+/)[0]
+        n_el = n_
+
+        break
+    }
+    
+    // update reference
+    _nstart = parseInt(n_el)
+}
+
 function gotoNextStart(n) {
+
+    // update reference of nstart
+    update_nStartReference()
+
+    // getting elements of `starting test`
     let s = document.getElementsByClassName('table-success')
 
-    // condition for (-2) == last
-    _nstart = n
-    if (_nstart === -2) {
-        _nstart = s.length - 1
-    }
+    // setting new value
+    let _n = parseInt(n)
+    _nstart += _n
     
     // limiting the values of _nstart: [0, length - 1]
     _nstart = Math.min(Math.max(_nstart, 0), s.length - 1)
     
     let el = s[_nstart]
-    // el.scrollIntoView()
 
     let position = el.getBoundingClientRect()
     window.scrollTo(position.left, position.top + window.scrollY - BIAS_SCROLL)
+}
+
+function gotoLast() {
+    // getting elements of `starting test`
+    let s = document.getElementsByClassName('table-success')
     
-    console.log(`going to ${_nstart+1} / ${s.length + 1}`)
+    gotoNextStart(s.length + 1)
+}
+
+function gotoFirst() {
+    // getting elements of `starting test`
+    let s = document.getElementsByClassName('table-success')
+
+    gotoNextStart(-s.length - 1)
 }
 
 async function loadData() {
@@ -359,14 +400,19 @@ function drawData(data) {
     } 
 
     // add new elements
+    let idx_start = 0
     for (d of data) {
         var row_class = "";
         var str_content = "";
         var type = "";
         if (d.entry.Info) {
             // highlight waiting for test
-            row_class = (isTestStarting(d)) ? "table-success" : "";
-            
+            row_class = ""
+            if (isTestStarting(d)) {
+                row_class = `table-success test-starting nstart-${idx_start}`
+                idx_start += 1
+            }             
+
             str_content = d.entry.Info;
             type = "INFO";
         } else if (d.entry.Error) {
